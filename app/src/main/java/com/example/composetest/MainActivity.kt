@@ -1,24 +1,23 @@
 package com.example.composetest
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
-import androidx.compose.foundation.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.frames.Frame
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.setContent
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.MutableLiveData
 import androidx.ui.tooling.preview.Preview
 
 class MainActivity : AppCompatActivity() {
@@ -27,12 +26,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContent{
-
-            Login()
+            MaterialTheme {
+                Login()
+            }
 
         }
 
     }
+    private val isIdError = MutableLiveData<Boolean>()
+    private val isPwError = MutableLiveData<Boolean>()
+
     @Preview
     @Composable
     private fun Login(){
@@ -93,14 +96,21 @@ class MainActivity : AppCompatActivity() {
         onValueChange: (TextFieldValue)->Unit
     ){
 
+        val errorState = isIdError.observeAsState()
         TextField(
             value = textFieldValue,
+            isErrorValue = errorState.value ?: false,
             onValueChange = { onValueChange(it) },
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Next,
             modifier = Modifier.width(300.dp),
             onTextInputStarted = {},
-            label = { Text("ID") }
+            label = { Text("ID") },
+            leadingIcon = {
+                Icon(
+                    asset = vectorResource(id = R.drawable.ic_baseline_person_24)
+                )
+            }
         )
     }
 
@@ -109,16 +119,31 @@ class MainActivity : AppCompatActivity() {
         textFieldValue: TextFieldValue,
         onValueChange: (TextFieldValue) -> Unit
     ) {
-
+        var visibleState by remember{mutableStateOf(false)}
+        val errorState = isPwError.observeAsState()
         TextField(
             value = textFieldValue,
-            onValueChange = {onValueChange(it)},
+            isErrorValue = errorState.value?:false,
+            onValueChange = { onValueChange(it) },
             keyboardType = KeyboardType.Password,
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if(visibleState) VisualTransformation.None else PasswordVisualTransformation(),
             imeAction = ImeAction.Done,
             modifier = Modifier.width(300.dp),
             onTextInputStarted = {},
-            label = {Text("Password")}
+            label = { Text("Password") },
+            leadingIcon = {
+                Icon(
+                    asset = vectorResource(id = R.drawable.ic_baseline_lock_24)
+                )
+            },
+            trailingIcon = {
+                Icon(
+                    asset = vectorResource(id = R.drawable.ic_baseline_remove_red_eye_24),
+                    modifier = Modifier.clickable(onClick = {
+                        visibleState = !visibleState
+                    })
+                )
+            }
         )
 
     }
@@ -126,9 +151,11 @@ class MainActivity : AppCompatActivity() {
     fun SubmitButton(idState: TextFieldValue, passwordState: TextFieldValue){
         Button(
             onClick = {
+                isIdError.value = idState.text.isEmpty()
+                isPwError.value = passwordState.text.isEmpty()
                 Toast.makeText(this, "id: ${idState.text}, password: ${passwordState.text}", Toast.LENGTH_LONG).show()
             },
-            content = { Text("submit") },
+            content = { Text("Confirm") },
             modifier = Modifier.width(300.dp)
         )
     }
